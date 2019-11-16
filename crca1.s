@@ -9,20 +9,44 @@
 #                                                        #
 ##########################################################
 
-    .globl crcTable
-
-##########################################################
-    .text
-
-##########################################################
-    .data
+.globl crcTable, crcInit, crcFast
 
 
-.rept 256
-.byte 0
-.endr
+.text##########################################################
+crcInit:
 
-##########################################################
+  #%rax will hold remainder
+  #%rbx will hold divedend
+  #%rcx will hold bit
+
+  xorq  0,%rbx #initialize dividend to zero for loop
+  jmp .loop_1
+
+.loop_1:
+
+  movq %rbx,%rax  # remainder = dividend
+  movq 8, %rcx  # intialize bit to 8 for loop
+
+  jmp .loop_2
+  
+  incq %rbx
+  cmpq %rbx, 256
+  jl .loop_1:
+
+  ret
+
+.loop_2:
+
+
+
+.data##########################################################
+
+crcTable:
+    .rept 256
+    .byte 0
+    .endr
+
+###############################################################
 
    
 
