@@ -12,34 +12,50 @@
 .globl crcTable, crcInit, crcFast
 
 
-.text##########################################################
+.text
+##########################################################
 crcInit:
 
   #%rax will hold remainder
   #%rbx will hold divedend
   #%rcx will hold bit
 
-  xorq  0,%rbx #initialize dividend to zero for loop
+  xorq  $0,%rbx #initialize dividend to zero for loop
   jmp .loop_1
 
 .loop_1:
 
   movq %rbx,%rax  # remainder = dividend
-  movq 8, %rcx  # intialize bit to 8 for loop
+  movb $8, %cl  # intialize bit to 8 for loop
 
   jmp .loop_2
   
   incq %rbx
-  cmpq %rbx, 256
-  jl .loop_1:
+  cmpq $256,%rbx
+  jl .loop_1
 
   ret
 
 .loop_2:
 
+  test $0x80,%rax #see if the remainder is = 0
+  jne .poly_jump  # if result is = 0 jump to poly 
+  shlq $1,%rax  # else just shift << 1
+  
+  ret
 
+.poly_jump:
 
-.data##########################################################
+  shlq $1,%rax  # shift << 1
+  xorq $0xD5,%rax # then ^ POLYNOMIAL
+
+  ret
+
+crcFast:
+
+##########################################################
+.data                                                    #
+##########################################################
 
 crcTable:
     .rept 256
