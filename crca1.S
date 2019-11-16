@@ -17,8 +17,8 @@
 crcInit:
 
   lea crcTable(%rip),%r11 #sets array to a register
-  #%rax will hold remainder
-  #%rbx will hold divedend
+  #%r10 will hold remainder
+  #%r9 will hold divedend
   #%rcx will hold bit
 
   xorq  $0,%rbx #initialize dividend to zero for loop
@@ -26,15 +26,15 @@ crcInit:
 
 .loop_1:
 
-  movq %rbx,%rax  # remainder = dividend
-  movb $8, %cl  # intialize bit to 8 for loop
+  movq %r9,%r10  # remainder = dividend
+  movq $8, %rcx  # intialize bit to 8 for loop
 
   jmp .loop_2 #move to loop to for modulo to bit
   
-  incq %rbx
-  cmpq $256,%rbx
+  incq %r9
+  cmpq $256,%r9
 
-  movq %rax,(%r11,%rbx,1) #assign remainder to dividend index
+  movq %r10,(%r11,%r9,1) #assign remainder to dividend index
 
 
   jl .loop_1
@@ -43,20 +43,20 @@ crcInit:
 
 .loop_2:
 
-  test $0x80,%rax #see if the remainder is = 0
-  jne .poly_jump  # if result is = 0 jump to poly 
-  shlq $1,%rax  # else just shift << 1
+  test $0x80,%r10 #see if the remainder is = 0
+  jne .poly_jump  # if result is > 0 jump to poly 
+  shlq $1,%r10  # else just shift << 1
 
-  inc %cl
-  cmp %cl,8
+  decq %rcx
+  cmpq %rcx,0
   jl .loop_2
   
   ret
 
 .poly_jump:
 
-  shlq $1,%rax  # shift << 1
-  xorq $0xD5,%rax # then ^ POLYNOMIAL
+  shlq $1,%r10  # shift << 1
+  xorq $0xD5,%r10 # then ^ POLYNOMIAL
 
   ret
 
@@ -69,26 +69,26 @@ crcFast:
   xorq $0,%r14 #set remainder to 0
   xorq $0,%rbp #byte = 0
 
-  cmpq %rbp,%rax
+  cmpq %rsi,%rbp
 
-  jle .fast_loop
+  jl .fast_loop
 
-.fast_loop:
-
-  xorq (%rax,%rbp),%r14 #data = msg[byte]^rmndr
-  movq (%rax,%rbp),%r15
-  movq (%r11,%r15),%r14
-
-  incq %rbp
-  cmpq %rbp,%rax
-
-  jle .fast_loop
+  movq %r14,%rax
 
   ret
 
+.fast_loop:
 
-  
+  movq (%rdi,%rbp,1),%r15
+  xorq %r14,%r15 #data = msg[byte]^rmndr
+  movq (%r11,%r15,1),%r14
 
+  incq %rbp
+  cmpq %rsi,%rbp
+
+  jl .fast_loop
+
+  ret
 
 
 ##########################################################
