@@ -46,7 +46,7 @@ crcInit:
   decq %rcx  #decrement loop2
   cmpb $0,%cl  # is bit > 0
   jg .loop_2  # end of loop2 -- goto assign value
-  jmp .add_array  #add to array
+  jmp .add_array
 
 .poly_jump:
 
@@ -107,16 +107,4 @@ crcTable:
 
 ###############################################################
 
-   
-
-
-
-
-
-
-
-
-
-
-
-
+  
