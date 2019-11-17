@@ -21,49 +21,46 @@ crcInit:
   #%rbx will hold divedend
   #%rcx will hold bit
 
-  xorq  $0,%rbx #initialize dividend to zero for loop
-  cmpq $256,%rbx
+  xorl  $0,%ebx #initialize dividend to zero for loop
+  cmpl $256,%ebx
   jl .loop_1
 
 .loop_1:
 
-  movq %r10,%rbx  # remainder = dividend
+  movq %rbx,%r10  # remainder = dividend
   movq $8, %rcx  # bit = 8
 
   jmp .loop_2 #move to loop to for modulo to bit
   
 
-  movq %rax,(%r11,%r9,1) #assign remainder to dividend index
+  movb %al,(%r11,%r9,1) #assign remainder to dividend index
 
-  incq %r9
-  cmpq $256,%r9
-
-  jl .loop_1
 
   ret
 
 .loop_2:
 
-  test $0x80,%r10 #see if the remainder is = 0
+  movq %r10,%r12  #holds remainder value
+  salb $1,%r12b  # just shift << 1 
+  andb $0x80,%r12b #see if the remainder is = 0
   jne .poly_jump  # if result is > 0 jump to poly 
-  shlq $1,%r10  # else just shift << 1
 
-  decq %rcx
+  decq %rcx  # --bit
   cmpq $0,%rcx
   jg .loop_2
 
-  movq %r10,%rax
+  movq %r12,%r10
+  incl %ebx
+  cmpl $256,%ebx
+  jmp .loop_1 # end of loop 2
   
-  ret
 
 .poly_jump:
 
-  shlq $1,%r10  # shift << 1
-  xorq $0xD5,%r10 # then ^ POLYNOMIAL
+  xorb $0xD5,%r12b # then ^ POLYNOMIAL
+  decq %rcx # --bit
 
-  movq %r10,%rax
-
-  ret
+  jmp .loop_2
 
 crcFast:
   
@@ -72,26 +69,27 @@ crcFast:
   #data = %r15
 
   xorq $0,%r13 #byte = 0
-  xorq $0,%r14 #set remainder to 0
+  xorb $0,%r14b #set remainder to 0
+  xorb $0,%r15b #data to 0
 
   cmpq %rsi,%r13
 
   jl .fast_loop
 
-  movq %r14,%rax
-
-  ret
 
 .fast_loop:
 
-  movq (%rdi,%r13,1),%r15
-  xorq %r14,%r15 #data = msg[byte]^rmndr
-  movq (%r11,%r15,1),%r14
+  movb (%rdi,%r13,1),%r15b #assign data
+  xorb %r14b,%r15b #data = msg[byte]^rmndr
+  movb (%r11,%r15,1),%r14b
 
   incq %r13
   cmpq %rsi,%r13
 
   jl .fast_loop
+  jmp .to_end
+
+.to_end:
 
   movq %r14,%rax
 
