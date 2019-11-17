@@ -17,84 +17,84 @@
 crcInit:
 
   lea crcTable(%rip),%r11 #sets array to a register
-  #%r10 will hold remainder
-  #%rbx will hold divedend
-  #%rcx will hold bit
+  #%r10 will hold remainder - char
+  #%rbx will hold dividend - int
+  #%rcx will hold bit - char
 
-  xorl  $0,%ebx #initialize dividend to zero for loop
-  cmpl $256,%ebx
+  movq  $0,%rbx #initialize dividend to zero for loop
+  cmpq $256,%rbx   # is dividend = 256?
   jl .loop_1
 
 .loop_1:
 
   movq %rbx,%r10  # remainder = dividend
-  movq $8, %rcx  # bit = 8
+  movq $8,%rcx  # bit = 8
 
-  jmp .loop_2 #move to loop to for modulo to bit
-  
+  cmpl $256,%ebx
+  jl .loop_2 #move to loop to for modulo to bit
 
-  movb %al,(%r11,%r9,1) #assign remainder to dividend index
-
-
-  ret
+  jmp .end_init # @ end of function
 
 .loop_2:
 
-  movq %r10,%r12  #holds remainder value
-  salb $1,%r12b  # just shift << 1 
+  movq %r10,%r12 #holds remainder value
+  salb $1,%r10b  # just shift remainder << 1 
   andb $0x80,%r12b #see if the remainder is = 0
-  jne .poly_jump  # if result is > 0 jump to poly 
+  cmpb $0,%r12b
+  jne .poly_jump  # if result is > 0 jump to polynomial 
 
-  decq %rcx  # --bit
-  cmpq $0,%rcx
-  jg .loop_2
-
-  movq %r12,%r10
-  incl %ebx
-  cmpl $256,%ebx
-  jmp .loop_1 # end of loop 2
-  
+  decq %rcx  #decrement loop2
+  cmpb $0,%cl  # is bit > 0
+  jg .loop_2  # end of loop2 -- goto assign value
+  jmp .add_array
 
 .poly_jump:
 
-  xorb $0xD5,%r12b # then ^ POLYNOMIAL
-  decq %rcx # --bit
+  xorb $0xD5,%r10b # then ^ POLYNOMIAL
+  decq %rcx #decrement loop2
 
-  jmp .loop_2
+  cmpb $0,%cl 
+  jg .loop_2  # end of loop 2 add to the array
+  jmp .add_array
 
-crcFast:
+.add_array:
+
+  movb %r10b,(%r11,%rbx,1) #assign remainder to dividend index
+  incq %rbx #increment loop1
+  cmpl $256,%ebx
+  jmp .loop_1 
+
+.end_init:
+  ret
   
+crcFast:
   #byte = %r13
-  #remainder = %r14
+  #remainder = %rax since I will be returning remainder
   #data = %r15
-
+  #crcTable = %r11
+  
+  lea crcTable(%rip),%r11 #sets array to a register
   xorq $0,%r13 #byte = 0
-  xorb $0,%r14b #set remainder to 0
-  xorb $0,%r15b #data to 0
-
-  cmpq %rsi,%r13
-
-  jl .fast_loop
-
+  xorq $0,%rax #set remainder to 0
+  xorq $0,%r15 #data to 0
+ 
+  jl .fast_loop # jump if less 
 
 .fast_loop:
+  cmpq %rsi,%r13  # compare bytes to Nbytes
+  jge .to_end  # go to end if reach condition
+  movb (%rdi,%r13),%r15b #assign data
+  xorb %al,%r15b #msg[byte]^rmndr
+  movb (%r11,%r15),%al #assign remainder
 
-  movb (%rdi,%r13,1),%r15b #assign data
-  xorb %r14b,%r15b #data = msg[byte]^rmndr
-  movb (%r11,%r15,1),%r14b
-
-  incq %r13
+  incq %r13  #increment
   cmpq %rsi,%r13
 
   jl .fast_loop
   jmp .to_end
 
 .to_end:
-
-  movq %r14,%rax
-
   ret
-
 
 ##########################################################
 .data                                                    #
