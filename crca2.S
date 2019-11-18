@@ -22,15 +22,16 @@ crcInit:
   #%rcx will hold bit - char
 
   movq  $0,%rbx #initialize dividend to zero for loop
-  cmpq $256,%rbx   # is dividend = 256?
+
   jl .loop_1
 
 .loop_1:
 
-  movq %rbx,%r10  # remainder = dividend
+  cmpq $256,%rbx   # is dividend = 256?  
+                   #use this compare for 2 conditions
+  cmovl %rbx,%r10  # remainder = dividend
   movq $8,%rcx  # bit = 8
 
-  cmpl $256,%ebx
   jl .loop_2 #move to loop to for modulo to bit
 
   jmp .end_init # @ end of function
@@ -39,22 +40,16 @@ crcInit:
 
   movq %r10,%r12 #holds remainder value
   salb $1,%r10b  # just shift remainder << 1 
+  movq %r10,%r14  #hold for polynomial
   andb $0x80,%r12b #see if the remainder is = 0
   cmpb $0,%r12b
-  jne .poly_jump  # if result is > 0 jump to polynomial 
+  xorb $0x5D,%r14b
+
+  cmovg %r14,%r10  # removed poly_jump
 
   decq %rcx  #decrement loop2
   cmpb $0,%cl  # is bit > 0
   jg .loop_2  # end of loop2 -- goto assign value
-  jmp .add_array
-
-.poly_jump:
-
-  xorb $0xD5,%r10b # then ^ POLYNOMIAL
-  decq %rcx #decrement loop2
-
-  cmpb $0,%cl 
-  jg .loop_2  # end of loop 2 add to the array
   jmp .add_array
 
 .add_array:
@@ -76,7 +71,7 @@ crcFast:
   lea crcTable(%rip),%r11 #sets array to a register
   xorq $0,%r13 #byte = 0
   xorq $0,%rax #set remainder to 0
-  xorq $0,%r15 #data to 0
+  #removed uncessary xorb
  
   jl .fast_loop # jump if less 
 
