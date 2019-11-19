@@ -16,8 +16,6 @@
 ##########################################################
 crcInit:
 
-  pushq %rbx
-  pushq %r12
   lea crcTable(%rip),%r11 #sets array to a register
   #%r10 will hold remainder - char
   #%rbx will hold dividend - int
@@ -67,8 +65,6 @@ crcInit:
   jmp .loop_1 
 
 .end_init:
-  popq %rbx
-  popq %r12
   ret
   
 crcFast:
@@ -76,8 +72,6 @@ crcFast:
   #remainder = %rax since I will be returning remainder
   #data = %r15
   #crcTable = %r11
-
-  pushq %r13
   
   lea crcTable(%rip),%r11 #sets array to a register
   xorq $0,%r13 #byte = 0
@@ -100,7 +94,6 @@ crcFast:
   jmp .to_end
 
 .to_end:
-  popq %r13
   ret
 
 ##########################################################
